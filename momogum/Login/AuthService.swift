@@ -35,13 +35,13 @@ final class AuthService {
     func signup(signupModel: SignupModel, completion: @escaping (Result<SignupResponseModel, APIError>) -> Void) {
         Messaging.messaging().token { fcmToken, error in
             if let error = error {
-                print(error)
+                completion(.failure(.networkError))
 //                print("❌ FCM 토큰 가져오기 실패: \(error.localizedDescription)")
                 return
             }
             
             guard let fcmToken = fcmToken else {
-                print("❌ FCM 토큰이 없음")
+                completion(.failure(.networkError))
                 return
             }
         
@@ -111,7 +111,6 @@ final class AuthService {
     
     func fetchUUID(token : String, completion: @escaping(Result<GetUUIDResponseModel, APIError>)-> Void){
         let url = "\(BaseAPI)/auth/me"
-        let token = AuthManager.shared.KakaoAccessToken ?? ""
         let headers: HTTPHeaders = [
                 "Authorization": "Bearer \(token)",
                 "Content-Type": "application/json"

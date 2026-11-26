@@ -24,8 +24,7 @@ struct momogumApp: App {
     
     var body: some Scene {
         WindowGroup {
-//            ContentView()
-            MainTabView()
+            ContentView()
                 .preferredColorScheme(.light)
         }
     }

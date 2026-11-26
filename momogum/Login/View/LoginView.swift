@@ -11,6 +11,7 @@ struct LoginView: View {
     @Environment(SignupDataModel.self) var signupDataModel
     @FocusState private var isFocused: Bool // TextField의 포커스 상태
     @FocusState private var isFocusedPWD: Bool
+    @State private var loginFailed = false
     @State private var path: [Route] = [] //path 설정
     var body: some View {
         
@@ -36,30 +37,20 @@ struct LoginView: View {
             Button{
                     authViewModel.handleKakaoLogin { success in
                         if success {
-                            path.append(.SignupStartView)
-//                            authViewModel.checkIsNewUser { isSuccess, isNew in
-//                                if isSuccess { //로그인 성공 true
-//                                    if isNew { //신규인경우 true
-//                                        path.append(.SignupStartView)
-//                                        print("신규 유저입니다. 회원가입이 필요합니다.")
-//                                    } else { // true false  기존유저
-//                                        AuthManager.shared.isLoggedIn = true
-//                                        authViewModel.fetchUserUUID()
-//                                        print("기존 유저 로그인 완료")
-//                                    }
-//                                } else {
-//                                    print(" 유저 확인 실패")
-//                                }
-//                            }  } else {
-                                
-//                                print(" 카카오 로그인 실패")
+                            authViewModel.checkIsNewUser { success, isNew in
+                                if success && isNew { path.append(.SignupStartView) }
+                                loginFailed = !success
                             }
+                        } else {
+                            loginFailed = true
+                        }
                     }
             }
                 label: {
                     Image("KakaoLogin")
                 }
                 
+                .alert("로그인에 실패했어요. 다시 시도해 주세요.", isPresented: $loginFailed) {}
                 .navigationDestination(for: Route.self) { route in
                     switch route {
                     case.SignupStartView:

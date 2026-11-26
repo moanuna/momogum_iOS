@@ -14,34 +14,10 @@ final class AuthManager : ObservableObject {
     
     private init() {}
     
-    private let defaults = UserDefaults.standard
     private let accessTokenKey = "momogumAccessToken"
     private let KakaoAccessTokenKey = "kakaoAccessToken"
     private let KakaoRefreshTokenKey = "kakaoRefreshToken"
-//    var UUID: Int? {
-//        get {
-//            let value = defaults.integer(forKey: "UUID")
-//            return value == 0 ? nil : value
-//        }
-//        
-//        set {
-//            if let newValue = newValue {
-//                defaults.set(newValue , forKey: "UUID")
-//            } else{
-//                defaults.removeObject(forKey: "UUID")
-//            }
-//        }
-//    }
-    
-
-    var UUID: Int? {
-        get {
-            return 9
-        }
-        set {
-            defaults.set(9, forKey: "UUID")
-        }
-    }
+    var UUID: Int? { currentUser?.id }
 
     //토큰 저장 키체인
     // 카카오소셜토큰값이 들어왔다가 기존 유저의 경우 isNewUser함수 실행하게 되면 해당 토큰값이 서버쪽 토큰값으로 바뀌게 된다.
@@ -60,26 +36,26 @@ final class AuthManager : ObservableObject {
         }
     var KakaoAccessToken: String? {
             get {
-                return KeychainHelper.shared.get(forKey: accessTokenKey)
+                return KeychainHelper.shared.get(forKey: KakaoAccessTokenKey)
             }
             set {
                 if let token = newValue {
-                    KeychainHelper.shared.save(token, forKey: accessTokenKey)
+                    KeychainHelper.shared.save(token, forKey: KakaoAccessTokenKey)
                 } else {
-                    KeychainHelper.shared.delete(forKey: accessTokenKey)
+                    KeychainHelper.shared.delete(forKey: KakaoAccessTokenKey)
                 }
             }
         }
     
     var KakaoRefreshToken: String? {
             get {
-                return KeychainHelper.shared.get(forKey: accessTokenKey)
+                return KeychainHelper.shared.get(forKey: KakaoRefreshTokenKey)
             }
             set {
                 if let token = newValue {
-                    KeychainHelper.shared.save(token, forKey: accessTokenKey)
+                    KeychainHelper.shared.save(token, forKey: KakaoRefreshTokenKey)
                 } else {
-                    KeychainHelper.shared.delete(forKey: accessTokenKey)
+                    KeychainHelper.shared.delete(forKey: KakaoRefreshTokenKey)
                 }
             }
         }
@@ -91,27 +67,15 @@ final class AuthManager : ObservableObject {
     
     
     func clearUserData() {
-          defaults.removeObject(forKey: "UUID")
-      }
-    
-    func handleLoginSuccess(userProfile: UserProfile) {
-        UserDefaults.standard.setValue(true, forKey: "isLoggedIn")
-        self.currentUser = userProfile
-        self.UUID = userProfile.id // 현재 유저의 UUID 저장
+        currentUser = nil
+        isLoggedIn = false
+        momogumAccessToken = nil
+        KakaoAccessToken = nil
+        KakaoRefreshToken = nil
     }
-    
-    
-    // 오토로그인 추후 구현예정
-    func checkAutoLogin() {
-        if let token = momogumAccessToken, !token.isEmpty, let userId = UUID {
-                isLoggedIn = true
-            // 기존에 저장된 UUID를 이용해 currentUser 설정
-            self.currentUser = UserProfile(id: userId, name: "이름", nickname: "닉네임", about: nil, profileImage: nil, newUser: false)
-                print("✅ 자동 로그인 성공: \(token)")
-            } else {
-                isLoggedIn = false
-                currentUser = nil
-                print("❌ 저장된 토큰 없음, 로그인 필요")
-            }
-        }
+
+    func handleLoginSuccess(userProfile: UserProfile) {
+        currentUser = userProfile
+        isLoggedIn = true
+    }
 }

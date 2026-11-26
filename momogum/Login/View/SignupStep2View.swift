@@ -172,8 +172,6 @@ struct SignupStep2View: View {
                         if isButtonEnabled && authViewModel.isUsernameDuplicated==false{ // 만약 조건에 들어맞고, 중복된 아이디가아니면
                             Button{
                                 authViewModel.signup()
-                                print(signupDataModel.creatUser())
-                                path.append(.SignupEndView)
                             }label: {
                                 Text("완료")
                                     .disabled(!isButtonEnabled)
@@ -207,6 +205,9 @@ struct SignupStep2View: View {
                 
             }
             .ignoresSafeArea(.keyboard)
+        }
+        .onChange(of: authViewModel.isSignedUp) { _, signedUp in
+            if signedUp { path.append(.SignupEndView) }
         }
         .onAppear {
             KeyboardHider.hideKeyboard()

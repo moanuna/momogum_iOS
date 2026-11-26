@@ -21,6 +21,7 @@ struct HeartView: View {
                     .resizable()
                     .frame(width: 24, height: 24)
             }
+            .disabled(viewModel.isUpdatingLike)
             .onTapGesture {
                 showHeartBottomSheet = true
             }

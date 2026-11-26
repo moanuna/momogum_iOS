@@ -10,6 +10,7 @@ import SwiftUI
 struct CommentBottomSheetView: View {
     @Environment(\.dismiss) var dismiss
     @State private var newComment = ""
+    @State private var submitFailed = false
     @FocusState private var isFocused: Bool
     @ObservedObject var viewModel: CardViewModel
     
@@ -89,14 +90,18 @@ struct CommentBottomSheetView: View {
                                 .padding(.leading, 12)
                                 .foregroundColor(.black)
                                 .focused($isFocused)
+                                .disabled(viewModel.isSubmittingComment)
                             
                             Spacer()
                             
                             Button(action: {
-                                if !newComment.isEmpty {
-                                    viewModel.addComment(mealDiaryId: mealDiaryId, comment: newComment)
-                                    newComment = ""
-                                    isFocused = false
+                                viewModel.addComment(mealDiaryId: mealDiaryId, comment: newComment) { success in
+                                    if success {
+                                        newComment = ""
+                                        isFocused = false
+                                    } else {
+                                        submitFailed = true
+                                    }
                                 }
                             }) {
                                 HStack {
@@ -109,6 +114,7 @@ struct CommentBottomSheetView: View {
                                 .background(newComment.isEmpty ? Color.gray.opacity(0.2) : Color.red)
                                 .cornerRadius(12)
                             }
+                            .disabled(newComment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isSubmittingComment)
                             .padding(.trailing, 10)
                         }
                     )
@@ -123,7 +129,8 @@ struct CommentBottomSheetView: View {
         .frame(maxWidth: .infinity)
         .background(Color.white)
         .cornerRadius(20)
-        .shadow(radius: 0)
+        .interactiveDismissDisabled(viewModel.isSubmittingComment)
+        .alert("댓글을 등록하지 못했어요. 다시 시도해 주세요.", isPresented: $submitFailed) {}
         .presentationDetents([.fraction(2/3)])
     }
 }

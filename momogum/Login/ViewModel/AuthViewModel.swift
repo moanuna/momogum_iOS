@@ -34,18 +34,18 @@ final class AuthViewModel: ObservableObject {
                    case .success(let response):
                        print(" 유저 정보 확인 성공: \(response)")
 
+                       guard response.isSuccess else { completion(false, false); return }
                        switch response.result {
                                    case .user(let userResult):  // 신규 유저인 경우
-                                       AuthManager.shared.UUID = userResult.id //추후 아이디 가져오는 방법 바꿀예정
                                        self.isNewUser = userResult.newUser // 신규유저인경우 true값 반환
                                     
                                        completion(true, userResult.newUser)
 
                                    case .token(let tokenResult):  // 기존 유저인 경우
                                        print("기존 유저 로그인 - 액세스 토큰 저장")
-                                       AuthManager.shared.KakaoAccessToken = tokenResult.accessToken
-                                       AuthManager.shared.KakaoRefreshToken = tokenResult.refreshToken
-                                       completion(true, false)
+                                       self.finishLogin(token: tokenResult.accessToken) { success in
+                                           completion(success, false)
+                                       }
                                    }
 
 
@@ -79,6 +79,7 @@ final class AuthViewModel: ObservableObject {
                     switch result {
                     case .success(let response):
                         if response.isSuccess {
+                            AuthManager.shared.momogumAccessToken = response.result.accessToken
                             self?.isSignedUp = true
                             self?.resetSignupData()
                             print("회원가입 성공")
@@ -160,31 +161,20 @@ final class AuthViewModel: ObservableObject {
             }
             else {
                 print("logout() success.")
-                AuthManager.shared.isLoggedIn = false
+                AuthManager.shared.clearUserData()
             }
         }
     }
 
-    func fetchUserUUID() {
-        AuthService.shared.fetchUUID(token: AuthManager.shared.KakaoAccessToken ?? "") { [weak self] result in
-               DispatchQueue.main.async {
-                   switch result {
-                   case .success(let response):
-                       print(" UUID 조회 성공: \(response)")
-                    AuthManager.shared.UUID = response.result.id
-
-                   case .failure(let error):
-                       print(" UUID 조회 실패: \(error.localizedDescription)")
-                       self?.errorMessage = error.localizedDescription
-                   }
-               }
-           }
-       }
-    
-    
-//     토큰 저장: AuthManager.shared.kakaoAccessToken = oauthToken.accessToken
-//     토큰 가져오기: AuthManager.shared.kakaoAccessToken
-//     토큰 삭제: AuthManager.shared.kakaoAccessToken = nil
-//     자동 로그인: checkAutoLogin()
+    func finishLogin(token: String, completion: @escaping (Bool) -> Void) {
+        AuthService.shared.fetchUUID(token: token) { result in
+            guard case .success(let response) = result, response.isSuccess else {
+                completion(false)
+                return
+            }
+            AuthManager.shared.momogumAccessToken = token
+            AuthManager.shared.handleLoginSuccess(userProfile: response.result)
+            completion(true)
+        }
+    }
 }
-

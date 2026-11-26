@@ -11,6 +11,8 @@ struct SignupEndView: View {
     @Binding var path: [Route]
     @ObservedObject var authViewModel: AuthViewModel
     
+    @State private var failed = false
+
     var body: some View {
         VStack{
             Text("정보 입력 완료!")
@@ -29,29 +31,18 @@ struct SignupEndView: View {
             Spacer()
         }
         .navigationBarBackButtonHidden()
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                path = []
-                AuthManager.shared.isLoggedIn = true
-//                authViewModel.checkIsNewUser { isSuccess, isNew in
-//                    if isSuccess { //로그인 성공 true
-//                        if isNew { 
-//                            path = []
-//                            print("newUser값이 false란 소리")
-//                        } else { // true false  기존유저
-//                            AuthManager.shared.isLoggedIn = true
-//                            authViewModel.fetchUserUUID()
-//                            print("신규 회원의 로그인 완료!")
-//                        }
-//                    } else {
-//                        print(" 유저 확인 실패")
-//                    }
-//                }
-            }
+        .onAppear { finishLogin() }
+        .alert("프로필을 불러오지 못했어요.", isPresented: $failed) {
+            Button("다시 시도") { finishLogin() }
+            Button("로그인으로 돌아가기") { path = [] }
         }
     }
-}
 
-//#Preview {
-//    SignupEndView(path: .constant([]))
-//}
+    private func finishLogin() {
+        guard let token = AuthManager.shared.momogumAccessToken else {
+            failed = true
+            return
+        }
+        authViewModel.finishLogin(token: token) { failed = !$0 }
+    }
+}

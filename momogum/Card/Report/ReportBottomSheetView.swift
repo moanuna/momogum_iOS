@@ -8,8 +8,7 @@
 import SwiftUI
 
 struct ReportBottomSheet: View {
-    @Binding var isPresented: Bool
-    @Binding var showCompletedModal: Bool
+    @State private var reportFailed = false
     @ObservedObject var viewModel: CardViewModel
     
     let mealDiaryId: Int
@@ -57,11 +56,8 @@ struct ReportBottomSheet: View {
             VStack(spacing: 0) {
                 ForEach(reasons, id: \.0) { reasonText, reasonCode in
                     Button(action: {
-                        print("\(reasonText) 신고 선택됨")
-                        viewModel.reportMealDiary(mealDiaryId: mealDiaryId, reason: reasonCode)
-                        isPresented = false
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            showCompletedModal = true
+                        viewModel.reportMealDiary(mealDiaryId: mealDiaryId, reason: reasonCode) {
+                            reportFailed = !$0
                         }
                     }) {
                         Text(reasonText)
@@ -82,5 +78,8 @@ struct ReportBottomSheet: View {
         .frame(maxWidth: .infinity)
         .background(Color.white)
         .cornerRadius(20)
+        .disabled(viewModel.isReporting)
+        .interactiveDismissDisabled(viewModel.isReporting)
+        .alert("신고하지 못했어요. 다시 시도해 주세요.", isPresented: $reportFailed) {}
     }
 }

@@ -132,10 +132,13 @@ class CardViewModel: ObservableObject {
             }
     }
     
-    func addComment(mealDiaryId: Int, comment: String) {
+    func addComment(mealDiaryId: Int, comment: String, completion: @escaping (Bool) -> Void) {
+        guard !isSubmittingComment else { return }
+        guard let user = AuthManager.shared.currentUser else { completion(false); return }
+        isSubmittingComment = true
         let url = "\(BaseAPI)/meal-diaries/comments"
         let parameters: [String: Any] = [
-            "userId": 9,
+            "userId": user.id,
             "mealDiaryId": mealDiaryId,
             "comment": comment
         ]
@@ -143,21 +146,12 @@ class CardViewModel: ObservableObject {
         AF.request(url, method: .post, parameters: parameters, encoding: JSONEncoding.default)
             .validate()
             .responseDecodable(of: ResponseData<ResultData>.self) { response in
-                switch response.result {
-                case .success(let data):
-                    if data.isSuccess {
-                        DispatchQueue.main.async {
-                            let newComment = Comment(userProfileImagePath: self.card.userProfileImageLink, nickname: self.card.nickname, content: comment)
-                            self.comments.append(newComment)
-                            self.card.commentCount += 1 // 댓글 개수 업데이트
-                            self.objectWillChange.send()
-                        }
-                    } else {
-                        print("❌ 댓글 추가 실패: \(data.message)")
-                    }
-                case .failure(let error):
-                    print("❌ 댓글 추가 실패: \(error.localizedDescription)")
-                }
+                self.isSubmittingComment = false
+                guard response.value?.isSuccess == true else { completion(false); return }
+                self.comments.append(Comment(userProfileImagePath: user.profileImage,
+                                             nickname: user.nickname, content: comment))
+                self.card.commentCount += 1
+                completion(true)
             }
     }
     

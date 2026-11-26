@@ -279,16 +279,10 @@ class CardViewModel: ObservableObject {
         AF.request(url, method: .post, parameters: parameters, encoder: JSONParameterEncoder.default)
             .validate()
             .responseDecodable(of: ResponseData<ResultData>.self) { response in
-                switch response.result {
-                case .success(let data):
-                    print("✅ 신고 성공: \(data.message)")
-                    self.showReportCompleted()
-                case .failure(let error):
-                    print("❌ 신고 API 호출 실패: \(error.localizedDescription)")
-                    if let data = response.data, let errorString = String(data: data, encoding: .utf8) {
-                        print("❌ 서버 응답 내용: \(errorString)")
-                    }
-                }
+                self.isReporting = false
+                let success = response.value?.isSuccess == true
+                if success { self.showReportCompleted() }
+                completion(success)
             }
     }
     

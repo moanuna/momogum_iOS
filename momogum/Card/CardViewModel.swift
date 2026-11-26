@@ -225,20 +225,10 @@ class CardViewModel: ObservableObject {
         AF.request(url, method: .post, encoding: JSONEncoding.default)
             .validate()
             .responseDecodable(of: ResponseData<String>.self) { response in
-                switch response.result {
-                case .success(let data):
-                    if data.isSuccess {
-                        DispatchQueue.main.async {
-                            self.card.isLiked = newLikeState
-                            self.card.likeCount += newLikeState ? 1 : -1
-                            print("✅ 좋아요 상태 변경 성공: \(newLikeState), 좋아요 개수: \(self.card.likeCount)")
-                        }
-                    } else {
-                        print("❌ 좋아요 토글 실패: \(data.message)")
-                    }
-                case .failure(let error):
-                    print("❌ 좋아요 API 호출 실패: \(error.localizedDescription)")
-                }
+                defer { self.isUpdatingLike = false }
+                guard response.value?.isSuccess == true else { return }
+                self.card.isLiked = newLikeState
+                self.card.likeCount += newLikeState ? 1 : -1
             }
     }
     

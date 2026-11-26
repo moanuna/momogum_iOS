@@ -24,6 +24,9 @@ class CardViewModel: ObservableObject {
         mealDiaryCreatedAt: ""
     )
     
+    @Published private(set) var isReporting = false
+    @Published private(set) var isSubmittingComment = false
+    @Published private(set) var isUpdatingLike = false
     @Published var comments: [Comment] = []
     @Published var showPopup = false
     @Published var showDeleteConfirm = false
@@ -71,7 +74,7 @@ class CardViewModel: ObservableObject {
     @Published var likedUsers: [LikeUser] = []
     
     func fetchMealDiary(mealDiaryId: Int) {
-        let userId = 9
+        guard let userId = AuthManager.shared.UUID else { return }
         let url = "\(BaseAPI)/meal-diaries?mealDairyId=\(mealDiaryId)&userId=\(userId)"
         
         AF.request(url, method: .get)
@@ -167,7 +170,8 @@ class CardViewModel: ObservableObject {
     }
     
     func deleteMealDiary(mealDiaryId: Int) {
-        let url = "\(BaseAPI)/meal-diaries/mealDiaryId/\(mealDiaryId)/userId/9"
+        guard let userId = AuthManager.shared.UUID else { return }
+        let url = "\(BaseAPI)/meal-diaries/mealDiaryId/\(mealDiaryId)/userId/\(userId)"
         AF.request(url, method: .delete)
             .validate()
             .responseData { response in
@@ -187,7 +191,8 @@ class CardViewModel: ObservableObject {
     }
     
     func toggleBookmarkAPI(mealDiaryId: Int) {
-        let url = "\(BaseAPI)/meal-diaries/bookmarks/userId/9/mealDiaryId/\(mealDiaryId)"
+        guard let userId = AuthManager.shared.UUID else { return }
+        let url = "\(BaseAPI)/meal-diaries/bookmarks/userId/\(userId)/mealDiaryId/\(mealDiaryId)"
         
         let currentBookmarkState = card.showBookmark // 기존 북마크 상태 저장
         let newBookmarkState = !currentBookmarkState  // 반전된 상태
@@ -216,7 +221,9 @@ class CardViewModel: ObservableObject {
     }
     
     func toggleLikeAPI(mealDiaryId: Int) {
-        let url = "\(BaseAPI)/meal-diaries/likes/userId/9/mealDiaryId/\(mealDiaryId)"
+        guard !isUpdatingLike, let userId = AuthManager.shared.UUID else { return }
+        isUpdatingLike = true
+        let url = "\(BaseAPI)/meal-diaries/likes/userId/\(userId)/mealDiaryId/\(mealDiaryId)"
 
         let currentLikeState = card.isLiked  // 현재 좋아요 상태 저장
         let newLikeState = !currentLikeState   // 상태 반전
@@ -259,9 +266,12 @@ class CardViewModel: ObservableObject {
         deleteMealDiary(mealDiaryId: mealDiaryId)
     }
     
-    func reportMealDiary(mealDiaryId: Int, reason: String) {
+    func reportMealDiary(mealDiaryId: Int, reason: String, completion: @escaping (Bool) -> Void) {
+        guard !isReporting else { return }
+        guard let userId = AuthManager.shared.UUID else { completion(false); return }
+        isReporting = true
         let url = "\(BaseAPI)/meal-diaries/report"
-        let parameters = ReportRequest(userID: 9, mealDiaryId: mealDiaryId, reportReason: reason)
+        let parameters = ReportRequest(userID: userId, mealDiaryId: mealDiaryId, reportReason: reason)
 
         print("📡 신고 API 요청 시작 - URL: \(url)")
         print("📡 신고 API 요청 - Parameters: \(parameters)")
